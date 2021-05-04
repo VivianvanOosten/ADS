@@ -1,0 +1,454 @@
+---
+title: "Tree Based Models"
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+# Introduction
+
+In this practical we will cover an introduction to building tree-based models, for the purposes of regression and classification. This will build upon, and review the topics covered in the lecture, in addition to Chapter 8: Tree Based Models in [Introduction to Statistical Learning (ISL)](<http://faculty.marshall.usc.edu/gareth-james/ISL/>). 
+
+For this practical, you will need the following packages: 
+
+```{r packages, message = FALSE, warning = FALSE, error = FALSE}
+# General Packages
+    library(tidyverse)
+
+# Decision Trees
+    library(tree)
+
+# Random Forests & Bagging 
+    library(randomForest)
+```
+
+Throughout this practical, we will be using the following data sets:
+
+- Red Wine Quality, used within the Moving Beyond Linearity Lecture (Week 6) from [Kaggle](<https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009>). This will have been provided to you within your Microsoft teams groups, ensure to import this `.csv` file into your R environment. *For this practical I use the name: `wine.dat`*.
+
+```{r}
+
+```
+
+---
+
+# Decision Trees 
+
+When examining classification or regression based problems, it is possible to use decision trees to address them. As a whole, regression and classification trees, follow a similar construction procedure, however their main difference exists in their usage; with regression trees being used for continuous outcome variables, and classification trees being used for categorical outcome variables. The other differences exist at the construction level, with regression trees being based around the average of the numerical target variable, with classification tree being based around the majority vote. 
+
+Knowing the difference between when to use a classification or regression tree is important, as it can influence the way you process and produce your decision trees.
+
+---
+
+**1. Using this knowledge about regression and classification trees, determine whether each of these research questions would be best addressed with a regression or classification tree.**
+
+Hint: Check the data sets in the *Help* panel in the `Rstudio` GUI.
+
+- 1a. Using the `Hitters` data set; You would like to predict the Number of hits in 1986 (`Hits` Variable), based upon the number of number of years in the major leagues (`Years` Variable) and the number of times at bat in 1986 (`AtBat` Variable).
+- 1b. Using the `Hitters` data set; You would like to predict the players 1987 annual salary on opening day (`Salary` variable), based upon the number of hits in 1986 (`Hits` variable), the players league (`League` variable) and the number of number of years in the major leagues (`Years` Variable).
+- 1c. Using the `Diamonds` data set; You would like to predict the quality of the diamonds cut (`cut` variable) based upon the price in US dollars (`price` variable) and the weight of the diamond (`carat` variable).
+- 1d. Using the `Diamonds` data set; You would like to predict the price of the diamond in US dollars (`price` variable), based upon the diamonds colour (`color` variable) and weight (`carat` variable).
+- 1e. Using the `Diamonds` data set; You would like to predict how clear a diamond would be (`clarity` variable), based upon its price in US dollars (`price` variable) and cut (`cut` variable).
+- 1f. Using the `Titanic` data set; You would like to predict the survival of a specific passenger (`survived` variable), based upon their class (`Class` variable), sex (`Sex` variable) and age (`Age` variable).
+
+---
+
+## Data Pre-Processing
+
+Before we start *growing* our own decision trees, let us first explore the data set we will be using for these exercises. This as previously mentioned is a data set from [Kaggle](<https://www.kaggle.com/>), looking at the Quality of Red Wine from Portugal. Using the functions `str()` and `summary()`, explore this data set (`wine.dat`). 
+
+As you can see this contains over 1500 observations across 12 variables, of which 11 can be considered continuous, and 1 can be considered categorical (`quality`). 
+
+---
+
+**2. After using the `str()` and `summary()` functions to examine the structure of the data, and check for any missing values.**
+
+```{r}
+
+```
+
+---
+
+Now we understand our data, before conducting any analysis on the data, we should first split the data set into a *training* set and a *validation* set. As previously discussed in other practicals these are incredibly important as these are what we will be using to develop (or train) our model before confirming them. *As a general rule of thumb for machine learning, you should use a 80/20 split, however in reality use a split you are most comfortable with!* 
+
+---
+
+**3. After setting a seed of 1000, (for reproducibility), randomly sample the `wine.dat` data set to be able to specify the sample in later work as `train`.**
+
+```{r}
+
+```
+
+---
+
+This should now give you the split data sets of train & validate, containing 1278 and 321 observations respectively. These will be used for both the Regression and Classification trees. It should be noted that the general method for *growing* both regression and classification trees are similar, however differences arise at the pruning and evaluation levels, and as such we will explore both to ensure you have a full understanding. 
+
+---
+
+## Regression Trees
+
+Now we have explored the data this practical will be structured around, let us focus on how to *grow* our own decision trees. Firstly, we will be examining how to *grow* your own regression trees. For this, let us consider the research question, can we predict the Fixed Acidity (`fixed.acidity`) of any given wine, based upon the wine's Sulphate Level (`sulphates`), amount of residual sugar (`residual.sugar`) and Alcohol content (`alcohol`)?
+
+### Building Regression Trees 
+
+In order to build up a regression tree, we will be using the function `tree()` from the [`tree`](<https://cran.r-project.org/web/packages/tree/index.html>) package, it should be noted although there are multiple different methods of creating decision trees, we will focus on the `tree()` function. As such this requires the following minimum components:
+
+- formula 
+- data
+- subset
+
+When *growing* a tree using this function, it works in a similar way to the `lm()` function, regarding the input of a formula, specific of the data and additionally how the data should be sub-setted. 
+
+---
+
+**4. Using the `tree()` function, grow a tree which answers the mentioned research question.**
+
+```{r}
+
+```
+
+---
+
+### Plotting Regression Trees 
+
+When plotting decision trees, most commonly this uses the `base` R's `plot()` function, rather than any `ggplot()` function. As such to plot a regression tree, you simply need to run the function `plot()` including the model as its main argument. 
+
+---
+
+**5. Using the `plot()` function, plot your regression tree.**
+
+```{r}
+
+```
+
+---
+
+As you can see when you plot this, this only plots the empty decision tree, as such you will need to add a `text()` function separately.
+
+---
+
+**6. After using the `plot()` function once again, as done in question 5, add a separate `text()` which specifies the arguments model & pretty = 0.**
+
+```{r}
+
+```
+
+---
+
+This now adds the text to the to the decision tree allowing it to be specified visually.
+
+---
+
+### Fitting Regression Trees 
+
+Although plotting the regression tree can be useful on its own can be useful at displaying how a topic is split, it only goes some way to answering the research question presented. As such, addition steps are required to ensure that the tree is efficiently fitted. 
+
+Firstly, you can explore the layout of the current model (before any pruning is completed) using the `summary()` function. This displays the variables used within the tree; the number of terminal nodes; the residual mean deviance and the distribution of the residuals.
+
+---
+
+**7. Using the `summary()` function, examine the current decision tree, and report the number of terminal nodes and the residual mean deviance**
+
+```{r}
+
+
+```
+
+---
+
+Before determining whether this model would be improved through pruning, we should first examine the overall accuracy of the model. To do this, you should run the model formally through the training and validation data set to determine whether this data is accurately predicted. In order to do this, you use the `predict()` function, which uses the relevant data set in the model. From this, it allows the calculation of the MSE, which is one indicator of accuracy within the creation of regression trees. 
+
+---
+
+**8. Using the `predict()` function, use the model you have just created, on the training and validation dataset using the term `newdata = wine.dat[-train,]`, labeling this output as `yhat_acidity_train` & `yhat_acidity_valid` respectively.**
+
+```{r}
+
+```
+
+---
+
+From this, it is then possible to determine the MSE of regression tree, using the code:
+
+```{r, eval = FALSE}
+# 1. Specify the training and validation subsets of the variable `fixed.acidity`
+  wine.acidity.train <- wine.dat[train, "fixed.acidity"]
+  wine.acidity.valid <- wine.dat[-train, "fixed.acidity"]
+
+# 2. Determine the MSE of both the training and validation subsets 
+  acidity.mse.train <- mean((yhat_acidity_train - wine.acidity.train)^2) 
+  acidity.mse.valid <- mean((yhat_acidity_valid - wine.acidity.valid)^2)
+
+  acidity.mse.train
+  acidity.mse.valid
+  
+# 3. Square Root this MSE to determine the parameters around the median
+  sqrt(acidity.mse.train)
+  sqrt(acidity.mse.valid)
+
+```
+
+This as has been discussed in previous lectures, indicates that predicted fixed acidity, will fall within the square-root of the MSE if the true median value of the fixed acidity. We are able to compare this value to other versions of this regression tree to determine which is the most accurate! 
+
+When we compare the MSE between the training and validation sets, you can see that (at least in my case) that the training case has a lower MSE than the validation set. This however is expected as this is what the model was developed around.
+
+To be able to build different models which you can then compare this initial tree too, you can use the function `cv.tree()`. This runs the tree repeatedly, at each step reducing the number of terminal nodes to determine how this impacts the deviation of the data. 
+
+---
+
+**9. Run the model through the `cv.tree()` function and examine the outcome using the `plot()` function.**
+
+Hint: When plotting the data, plot the `size` against the `dev` from the `cv.tree()` output, specifying the additional argument of `type` as `'b'`. 
+
+```{r}
+
+```
+
+---
+
+When you have run this code, you should observe a graph, which plots the `size` (the amount of nodes) against the `dev` (cross-validation error rate). This indicates how this error rate changes depending on how many nodes are used. In this case you should be able to observe a step drop in `dev` between 1 and 5, before it slowing down from 5 to 9 (the maximum number of nodes used). From this, we can begin to compare the MSE between these different models, to see which is best fitting. In order to prune the decision tree, you simply use the function `prune.tree()`, providing both the model and `best = number of nodes` as your arguments. 
+
+When looking at the final number of nodes to use, you should look to select the lowest MSE for the validation sets. It should be noted, that when determining the best number of nodes to use the MSE values follow a U shaped curve, increasing after the lowest point indicating where over fitting begins to occur. 
+
+---
+
+**10. Using the code template provided for calculating the MSE of a plot; determine which model is better: a Plot with 4 6, 8 & 9 nodes**
+
+
+```{r}
+
+```
+
+---
+
+---
+
+## Classification Trees 
+
+Now we have seen how to *grow* regression trees we can now consider how to *grow* classification trees. Once again, let us first consider the research question, can we predict whether wine quality is classified as *Good* (Quality > 5) or *Poor* (Quality <= 5), by the Fixed Acidity (`fixed.acidity`), amount of residual sugars (`residual.sugar`), pH (`pH`) and amount of sulphates (`sulphates`)? 
+
+Before we *grow* this tree, we must create an additional variable, which indicates whether a wine is of *Good* or *Poor* quality, based upon the quality of the data. 
+
+---
+
+**11. Using the example provided on Page 324 in ISLR, use the `ifelse()` function to create a new variable `bin_qual` (short for binary quality) as part of the `wine.dat` data set.**
+
+```{r}
+  
+```
+
+---
+
+### Building Classification Trees 
+
+Now that you have split the quality of the wine into this dichotomous pair, you can more easily *grow* a classification tree around it. To do this, the same initial steps can be conducted as within the regression tree.
+
+---
+
+**12. Using the `tree()` function, grow a tree which answers the research question can we predict whether wine quality is classified as *Good* (Quality > 5) or *Poor* (Quality <= 5), by the Fixed Acidity (`fixed.acidity`), amount of residual sugars (`residual.sugar`), pH (`pH`) and amount of sulphates (`sulphates`)?**
+
+Please note: As you have made changes to the `wine.dat` data set you will need to repeat the sampling process to get a training subset for the tree model. 
+
+```{r}
+
+```
+
+---
+
+### Plotting Classification Trees 
+
+Now that you have this classification tree model, this can once again be plotted using the `plot()` and `text()` functions. 
+
+---
+
+**13. Using the same steps as you used within Question 6, plot this classification tree**
+
+```{r}
+
+```
+
+---
+
+### Fitting Classification Trees 
+
+When examining how well fitting classification trees are, a different method is used in comparison to regression trees. To determine how well classification trees are fitted an accuracy measurement is calculated using a confusion matrix. This matrix is a 2x2 cross table which plots the predicted values against the real values, using the `table()` function. 
+
+So let us build a 2x2 cross table for the training subset. To begin, once more you need to calculate the predicted value under the model, however for this you must specify that you want to use `type = "class"`; before forming a table between the predicted values and the actual values. As shown below
+
+```{r, eval = FALSE}
+# Create the predictions 
+    yhat_qual_train <- predict(tree.qual, newdata = wine.dat[train,], type = "class")
+
+# Create the training data subset 
+    qual_train <- wine.dat[train, "bin_qual"]
+
+# Create the cross table:
+    
+    tab.qual.train <- table(yhat_qual_train, qual_train)
+    tab.qual.train
+    
+```
+
+This then creates a 2x2 matrix, indicating the frequency when a wine was predicted as good that it is actually good or poor, and vice versa. This can then be used to determine the accuracy through the formula:
+
+Accuracy = (Total Correct-True Predict [1,1] + Total Correct-False Predictions [2,2]) / total number of items
+
+```{r, eval = FALSE}
+# Calculate Accuracy accordingly: 
+  accuracy.qual.train <- (tab.qual.train[1] + tab.qual.train[4]) / 1278
+
+  accuracy.qual.train
+
+```
+
+From this, you can see that this model has an accuracy of around 65.57% meaning that 65.57% of the time, it is able to correctly predict from the variables whether a wine will be of *good* or *poor* quality.
+
+---
+
+**13. Using this format, create a confusion matrix for the validation subset, and calculate the associated accuracy**
+
+```{r}
+
+```
+
+---
+
+Once again however, it is possible to evaluate whether pruning this tree may lead to an improved tree. This can be done once again using the `cv.tree()` function. In this unlike for regression trees, you will need to use the argument `FUN = prune.misclass` to indicate we are looking at a classification tree.
+
+---
+
+**14. Using `cv.tree()` & your knowledge of using Confusion matrices determine whether the current number of nodes is the best fitting tree, or which number of nodes has the highest accuracy for the validation set.**
+
+Hint: After determining the nodes which could be used, ensure to use the prune function `prune.misclass()` to prune the tree.
+
+```{r}
+
+```
+---
+
+---
+
+# Bagging and Random Forests
+
+When examining the techniques of Bagging and Random Forests, it is important to remember that Bagging is simply a specialized case of Random Forests where the number of considered splits should be equal to the number of predictors, and the number of variables randomly sampled as candiates at each split is equal to the number of variables available.
+
+So for example, if you were looking to predict the quality of wine (as we have done during the classification tree section), based upon the predictors fixed acidity (`fixed.acidity`), citric acid (`citric.acid`), residual sugars (`residual.sugar`), pH (`pH`), total sulfur dioxide content (`total.sulfar.dioxide`), density (`density`) and alcohol (`alcohol`) content. If we were to undergo the bagging process we would limit the number of splits within the analysis to 7, whereas within random forest it could be any number of values you choose. 
+
+As such, the process of doing Bagging or Random Forests is similar, so both will be explained and their differences highlighted. For this section alongside the MSE as a measure of model accuracy we will also be exploring the Out of Bag (OOB) Estimator and the Variable Importance measure will also be examined. 
+
+---
+
+## Bagging 
+
+As bagging is considered a special form of random forests, we will start here to understand how to grow a random forest. As this is the case, both Bagging and Random Forest are based around the function `randomForest()` from the [randomForest](<https://cran.r-project.org/package=randomForest>). This similar to the construction of decision trees requires the following components:
+
+```{r, eval = FALSE}
+
+randomForest(formula = ???,       # Tree Formula 
+             data = ???,          # Data Set
+             subset = ???,        # How the data set should be subsetted 
+             mtry = ???,          # Number of predictors to be considered for each split 
+             importance = TRUE,   # The Variable importance estimator
+             ntree = ???)         # The number of trees within the random forest
+
+```
+
+In the case of bagging, the argument `mtry` should be set to the quantity of the predictors used within the model. 
+
+---
+
+**15. Create a Bagging Model for the research question: quality of wine (as we have done during the classification tree section; `bin_qual`), based upon the predictors fixed acidity (`fixed.acidity`), citric acid (`citric.acid`), residual sugars (`residual.sugar`), pH (`pH`), total sulfur dioxide content (`total.sulfur.dioxide`), density (`density`) and alcohol (`alcohol`) content.**
+
+Hint: Leave ntree empty for the time being.
+
+```{r}
+
+```
+
+If you haven't already done so, this is a good point to call this model (simply by its name). But how do we interpret the output of this classification example? It should be noted during this session we will focus on a classification example, as the ISLR textbook focuses on a Regression Tree example, please see section 8.3.3 for this! 
+
+From this output, you can observe several different components. Firstly, you should be able to observe that it recognizes that this is a *Classification* forest, with 500 trees and 7 variables tried at each split. In this latest version of the `randomForest()` function, you will see this *helpfully* provides the OOB estimate for us, in addition to a classification confusion matrix. 
+
+Before we move onto the OOB estimate, let us examine the confusion matrix, as before we can calculate an accuracy level here: 
+
+---
+
+**16. Using your knowledge of how to calculate the accuracy of the model from a confusion matrix, determine this initial bagged forest's accuracy, before calculating the accuracy for a model (addressing the same research question) with 10, 25, 100, 500 (initial) & 10000 respectively. What do you notice about the accuracy of the forests, complete this for both the training and validation data sets.**
+
+```{r}
+
+```
+
+---
+
+Finally let us discuss the Out of Bag (OOB) estimator of error rate. The OOB estimator of the error rate is provided automatically with the latest version of `randomForest()`, and can be used as a valid _estimator_ of the test error of the model. In the OOB estimator of the error rate, the left out data at each bootstrapped sample (hence, Out of Bag) is used as the validation set. That is, the response for each observation is predicted using each of the trees in which that observation was OOB. This score, like other indicates of accuracy deviation, you will want as low as possible, since it indicates the error rate. 
+
+---
+
+**17. Reviewing the Bagged Forests you made in question 16, which has the Highest and Lowest OOB score?**
+
+```{r}
+
+```
+
+---
+
+## Random Forests 
+
+The main difference between Bagging and Random Forests is that the number of variables randomly sampled as candiates at each split is not equal to the number of variables available. In this case, typically (by default from the `randomForest()` function), they determine `mtry` to be 1/3 the number of available variables for regression trees and the square root of the number of available variables for classification trees. 
+
+---
+
+**18. Using the formula and data from Bagging, construct two forests; one indicating the lower round of the square root of the number of available variables and the other the upper rounded variable. And construct the accuracy of these models and determine which is the most accurate between the Bagged Example, and the two you have now created.**
+
+*For this, use ntree = 500.*
+
+```{r}
+
+```
+
+---
+
+As with Bagging, it is important to also run this model using the validation data sub set to ensure that the accuracy is representative. 
+
+The final part of this practical will look into how to actually interpret Random Forests, using the Variable Importance Measure. As you have probably worked out from section so far, physically representing these forests is incredibly difficult and harder to interpret them, in comparison to solo trees. As such, although creating random forests improves the prediction accuracy of a model, this is at the expense of interpretability. Therefore, to understand the role of different variables within the forests as a whole it is important to examine the measure of Variable Importance. 
+
+Overall, when looking at Regression Trees, this Variable Importance measure is calculated using the residual sum of squares (RSS) and via the Gini Index for classification trees. However, the correct version will be determined by the `randomForest()` function, as it can recongise whether you are creating a regression or classification tree forest. 
+
+In order to call this measure, we simply need to call the model into the function `importance()`. Within our case (looking at a classification forest) this will produce four columns, the binary outcome (Good/Poor) in addition to the Mean Decrease in Accuracy and the Mean Decrease in Gini Index. This is by contrast to those which you will find when examining Regression trees, examples of which can be found in ISLR Section 8.3.3. 
+
+In order to best interpret these findings, it is possible to plot, how important each variable is using the function `varImpPlot()`. This (in our example) will produce a sorted plot which will show the most to least important variables.
+
+---
+
+**19. Using your most accurate model, you have produced as a Random Forest (from Questions 17 & 18), examine the importance of the variables and use `varImpPlot()` to plot this, and discuss which Variable here is most important to predicting the quality of Wine.**
+
+```{r}
+
+```
+
+---
+
+
+
+
+
+---
+
+
+
+
+
+
