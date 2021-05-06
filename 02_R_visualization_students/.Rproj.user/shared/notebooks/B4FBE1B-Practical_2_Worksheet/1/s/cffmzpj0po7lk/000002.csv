@@ -1,0 +1,3 @@
+"0","ggplot(data = msleep, mapping = aes(x = sleep_rem, y = awake, size = brainwt, shape = vore)) +"
+"0","  geom_point() + theme_minimal() + scale_colour_ghibli_d('KikiMedium') "
+"0",""

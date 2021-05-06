@@ -1,0 +1,7 @@
+"0","ggplot() +"
+"0","  geom_line(data = aapl.stk, mapping = aes(x=Date, y = Volume, color = 'blue')) +"
+"0","  geom_line(data = msft.stk, mapping = aes(x=Date, y = Volume, color = 'red')) +"
+"0","  geom_line(data = fb.stk, mapping = aes(x=Date, y = Volume, color = 'green')) +"
+"0","  scale_color_discrete(name = 'Type of stock', "
+"0","                     labels = c('aapl','msft','fb')) +"
+"0","   theme_minimal()"

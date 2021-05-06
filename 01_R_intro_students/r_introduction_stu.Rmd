@@ -1,0 +1,213 @@
+---
+title: "Introduction to aDAV in R"
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Welcome to the practicals for the course aDAV. In the practicals we will get hands-on experience with the materials in the lectures by doing theoretical exercises, programming in `R`, and completing assignments. This is the first practical. In this practical, we will start with a exercise on the distinction between supervised and unsupervised learning, and then proceed with `R`. We will briefly introduce how we are going to work with `R` and `RStudio` for the remainder of the course, and get to know (some of) the datasets that we are going to work with.
+
+- Make sure you have read and completed the [preparations](https://adav-course-2021.netlify.com/0_prep/).
+- Read through the [course schedule](https://https://adav-course-2021.netlify.app/course_info/schedule/). Note that assignments are due in week 5 and 9.
+
+From these practicals, nothing needs to be handed in. You are doing these practicals to get experience with the material from the lectures and to practice for the assignments (which do need to be handed in).
+
+
+# Supervised and unsupervised learning
+
+In the lecture and reading material for this week we have seen that machine learning can be classified on the characteristics of the data and the tasks it aims to solve. A main distinction to be made is that between _supervised_ and _unsupervised_ learning: 
+
+```{r supervis, out.width = "50%", echo = FALSE, fig.align = 'center'}
+knitr::include_graphics("images/supervised.png")
+```
+
+In this exercise, we will practice this distinction using 10 examples. 
+
+---
+
+1. __Classify the following examples into Supervised learning tasks and Unsupervised learning. If they are Supervised, indicate whether a classification task or a regression task applies. After 10 minutes, we will discuss the correct answers in class. _Hint_: always start asking yourself if would expect a response variable in the data!__
+
+---
+
+A) You work at a consultancy company, and a bank hired your services. Your customer asks you to develop a model that helps them predicting which loan applicants will default (not be able to pay the loan). Final goal: predict good or bad applicants. 
+Answer: supervised classification.
+B) Is there a cat in the picture? Recognize cats in pictures of animals and other objects. Final goal: cat or not cat.
+Answer: supervised classification 
+C) A biologist friend of yours asks you to assess the phylogenetic relation between different species of birds using genetic information (traits). The outcome of your analysis is a phylogenetic tree in which species that diverged more recently are closely linked together.
+```{r tree, out.width = "50%", echo = FALSE, fig.align = 'center'}
+knitr::include_graphics("images/Phylogenetic_tree.png")
+```
+_Phylogenetic tree of life built using ribosomal RNA sequences, after Karl Woese. Image credit: Modified from Eric Gaba, Wikimedia Commons_.
+Answer: Unsupervised
+
+D) Using pre-existing data and satellite images containing information such as albedo, infrared refraction, colour absorption, etc., and known superficies with solar panels, train a model able of estimating the total area of solar panels per image.
+Answer: Unsupervised (could be supervised if you have that data)
+E) Market segmentation: group customers into segments based on their purchasing behaviours, age, maximal educational degree attained, etc.
+Answer: Unsupervised
+F) Predict whether nodules in a tomography are benign or malignant. You will use a dataset in which the images have been manually annotated by a committee of medic doctors.
+Answer: Supervised, classification
+G) Use news and social media analytics to predict changes in the stock market. You will use a small number of stocks as target indicators, and web-scrapped text from social media and the news. You have access to previous instances of this data, and you want to predict the values for your indicators in the near future.
+Answer: Supervised, regression
+H) Build a recommendation system for songs. It suggests new artists based on their multidimensional “proximity” to the ones liked by the user: “Because you liked ______ you may also like ______.”
+Answer: Unsupervised
+I) An applied researcher wants to evaluate whether the stress felt by students acts affects the relation between amount of study time and the probability of success on an exam. You will use a data collected in a classroom experiment.
+Answer: Supervised, regression
+J) A pharmaceutical company is developing a drug to treat certain type of cancer. The first step is looking for targets: they ask you to analyse data consisting on the differential expression of 10,000 genes in micro-RNA chips from different tissues. You want to uncover groups of genes that display similar expression patterns in each of the tissues.
+Answer: Unsupervised
+
+
+```{r q1}
+"
+A:supervised classification.
+B: supervised classification 
+C: Unsupervised
+D: Unsupervised (could be supervised if you have that data)
+E: Unsupervised
+F: Supervised, classification
+G: Supervised, regression
+H: unsupervised
+I: Supervised, regression
+J: Unsupervised"
+```
+
+
+# R projects and Markdown files
+
+We assume that you are already familiar with R and Rstudio, as outlined in the entry requirements of the course. In addition, we assume you are familiar with using Rstudio projects and R Markdown files, as outlined in the course [Preparation](https://adav-course-2021.netlify.com/0_prep/). If you haven't completed the course preparation tab on the website yet, please do so before next class. If you feel you still lack some R skills, there are some sources mentioned under [Preparation](https://adav-course-2021.netlify.com/0_prep/). 
+
+In this course we will always work in a project. During this practical, we will work in the project `01_R_intro_students`.
+
+---
+
+2. __Open the file `01_R_intro_students.Rproj` in RStudio and run the following code in the console. Do you know where the file "sometext.txt" is located on your disk?__
+
+---
+
+```{r readlines, eval = FALSE}
+print(readLines("data/sometext.txt"))
+```
+
+---
+
+In addition, we will make extensive use of `.Rmd` files, R Markdown files. With R Markdown files, we can easily create documents which seamlessly combine text, code, and plots. The document you are reading right now was generated from an R Markdown file.
+
+---
+
+3. __Open the file `r_introduction_stu.Rmd` from the Files pane in RStudio.__
+
+---
+
+RStudio may ask you to install several packages. You should allow it to!  
+If these do not install, you should install and load [rmarkdown](<https://cran.r-project.org/web/packages/rmarkdown/index.html>); [knitr](<https://cran.r-project.org/web/packages/knitr/index.html>) and the [tidyverse](<https://www.tidyverse.org/>).
+
+---
+
+4. __Make sure you can output the R Markdown file you created to a html using `Knit > Knit to HTML` on top of the source pane.__
+
+---
+
+The assignments in week 3 and week 8 need to be handed in as an `R` project folder with data, a `.Rmd` file, and the `.html` file generated from it.
+
+From practical 2 onwards, we will always start by opening the `R` project and do the assignments directly in the R Markdown file. Under each assignment, you can insert an `R` chunk and input your code there. If you prefer, you may also work directly in a `.R` file for the practicals. Note that if you do this, you will still have to work with an `.Rmd` file for the assignments.
+
+
+# Datasets from the ISLR package
+
+```{r islr_data, echo = FALSE, warning = FALSE}
+library(ISLR)
+dsets <- paste(ls("package:ISLR"), collapse = ", ")
+```
+
+The first book we are using in this course is [Introduction to Statistical Learning](http://www-bcf.usc.edu/~gareth/ISL/), abbreviated as ISLR. The authors use several datasets throughout the book which are packaged in the `R` package `ISLR`. The datasets are: `r dsets`.
+
+---
+
+8. __Install and load the package in `R` by running the following in the console__
+
+---
+
+```{r install_islr, eval = FALSE}
+install.packages("ISLR")
+library(ISLR)
+```
+
+You only need to install packages once. When they are installed on your system, you can always load them in your environment using `library()`. Let's have a closer look at some of the datasets we will be working with.
+
+---
+
+9. __Look at the Default dataset by running the following in the console. What does this dataset contain?__
+
+---
+
+```{r default, eval = FALSE}
+View(Default)
+# it contains the table 'Default' with columns default, student, balance, income
+```
+
+
+---
+
+10. __Use the function `head()` to look at the first few rows of the `Hitters` dataset. What data does this dataset contain? What are the variable types? Hint: to get more information on what each column represents, this dataset comes with a neat help file that can be accessed through `?Hitters`__
+
+---
+
+```{r q10}
+# You can put your code and your answers here
+View(head(Hitters))
+?Hitters
+```
+
+---
+
+11. __Do the same for the `Boston` dataset, contained in the `MASS` library. What data does this dataset contain? What are the variable types? Hint: also this dataset comes with a neat help file that can be accessed through `?Boston`__
+
+---
+
+```{r q11}
+# You can put your code and your answers here
+library(MASS)
+View(Boston)
+?Boston
+```
+
+---
+
+12. __Use the function `summary()` to create a summary of the `Boston` dataset. What is the range and median per capita crime rate by town? And what is the range of the average number of rooms per dwelling?__
+
+---
+
+```{r q12}
+summary(Boston)
+# median: 0.25651
+# range: 0.00632-88.97620
+
+# range: 3.561 - 8.8780
+```
+
+# Code style  
+
+Throughout this course, *try* to maintain a consistent and legible style for your code. This is very important as it will make your collaborators, as well as future you happy. Being able to read and understand your own code after a year of not looking at it is possible if you use consistent style and informative comments where necessary. 
+
+---
+
+13. __Read through the [style guide](http://adv-r.had.co.nz/Style.html) on Hadley Wickham's website.__
+
+---
+
+Try to adhere to this style for your assignments, too. Tip: in RStudio, you can display a vertical line at 80 characters to know when your code exceeds this. You can do this at Tools > Global Options > Code > Display > Show margin.
+
+
+# Conclusion
+
+If you have followed this practical, you are all set for the remainder of this course! Next week, we will have a closer look at the Visualization using ggplot.  
+

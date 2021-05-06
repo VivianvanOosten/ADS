@@ -1,0 +1,33 @@
+"0","aapl.stk <- read_csv(file = ""data/HistoricalData_AAPI_6m.csv"")"
+"2","Parsed with column specification:
+cols(
+  Date = [31mcol_character()[39m,
+  `Close/Last` = [31mcol_character()[39m,
+  Volume = [32mcol_double()[39m,
+  Open = [31mcol_character()[39m,
+  High = [31mcol_character()[39m,
+  Low = [31mcol_character()[39m
+)
+"
+"0","msft.stk <- read_csv(file = ""data/HistoricalData_MSFT_6m.csv"")"
+"2","Parsed with column specification:
+cols(
+  Date = [31mcol_character()[39m,
+  `Close/Last` = [31mcol_character()[39m,
+  Volume = [32mcol_double()[39m,
+  Open = [31mcol_character()[39m,
+  High = [31mcol_character()[39m,
+  Low = [31mcol_character()[39m
+)
+"
+"0","fb.stk <- read_csv(file = ""data/HistoricalData_FB_6m.csv"")"
+"2","Parsed with column specification:
+cols(
+  Date = [31mcol_character()[39m,
+  `Close/Last` = [31mcol_character()[39m,
+  Volume = [32mcol_double()[39m,
+  Open = [31mcol_character()[39m,
+  High = [31mcol_character()[39m,
+  Low = [31mcol_character()[39m
+)
+"

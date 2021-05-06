@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1619027936661.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2737016828",
+    "id" : "90B0E595",
+    "lastKnownWriteTime" : 1619028244,
+    "last_content_update" : 1619028244607,
+    "path" : "~/surfdrive/aDAV in development/aDAV_practicals/01_R_introduction/01_R_intro_students/r_introduction_stu.Rmd",
+    "project_path" : "r_introduction_stu.Rmd",
+    "properties" : {
+        "cursorPosition" : "58,8",
+        "scrollLine" : "55"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

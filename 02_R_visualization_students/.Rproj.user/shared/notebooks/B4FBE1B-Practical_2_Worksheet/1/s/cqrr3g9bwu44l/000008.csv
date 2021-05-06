@@ -1,0 +1,3 @@
+"0","library(ghibli)"
+"0","ggplot(data = airquality, mapping = aes(x = Wind, y = Solar.R, colour = Temp)) +"
+"0","  geom_point() + scale_colour_ghibli_c('KikiMedium')"

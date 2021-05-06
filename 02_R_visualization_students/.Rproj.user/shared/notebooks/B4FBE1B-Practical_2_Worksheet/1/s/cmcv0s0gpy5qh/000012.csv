@@ -1,0 +1,8 @@
+"0","ggplot(data = msleep, "
+"0","       mapping = aes(x = sleep_rem, y = awake, size = brainwt)) + "
+"0","        geom_point() + "
+"0","        labs(x = ""Amount of REM Sleep"", y = ""Amount of Time Spent Awake"","
+"0","             title = ""Amount of REM Sleep compared to the Time Spent Awake"","
+"0","             colour = ""Diet"") +"
+"0","        facet_grid(cols = vars(vore)) +"
+"0","        theme_minimal()"

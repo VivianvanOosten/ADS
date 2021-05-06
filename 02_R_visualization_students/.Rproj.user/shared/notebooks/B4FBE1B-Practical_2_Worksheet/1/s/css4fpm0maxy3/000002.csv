@@ -1,0 +1,6 @@
+"0","aapl.stk$`Close/Last` <- as.numeric(gsub(""\\$"", """", aapl.stk$`Close/Last`))"
+"0","msft.stk$`Close/Last` <- as.numeric(gsub(""\\$"", """", msft.stk$`Close/Last`))"
+"0","fb.stk$`Close/Last`   <- as.numeric(gsub(""\\$"", """", fb.stk$`Close/Last`))"
+"0","aapl.stk$Date<- as.Date(aapl.stk$Date,format='%m/%d/%Y')"
+"0","msft.stk$Date<- as.Date(msft.stk$Date,format='%m/%d/%Y')"
+"0","fb.stk$Date<- as.Date(fb.stk$Date,format='%m/%d/%Y')"

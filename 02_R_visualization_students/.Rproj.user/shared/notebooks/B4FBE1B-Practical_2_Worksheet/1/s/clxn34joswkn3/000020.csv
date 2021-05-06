@@ -1,0 +1,1 @@
+"0","ggplot(data = msft.stk, mapping = aes(x=Date, y = Low)) + geom_line()"
