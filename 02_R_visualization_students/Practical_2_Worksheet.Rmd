@@ -317,6 +317,7 @@ ggplot() +
 ---
 
 ```{r}
-
-
+ggplot(data = midwest, mapping= aes(x = percblack, y = percchildbelowpovert)) + 
+  geom_point() +
+  geom_rug(col = rgb(.5,0,0, alpha = .2))
 ```
