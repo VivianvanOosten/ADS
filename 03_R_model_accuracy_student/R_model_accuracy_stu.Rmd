@@ -1,0 +1,502 @@
+---
+title: "Model accuracy and fit"
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+# Introduction
+
+In this (optional) lab at home, you will learn how to plot a linear regression with confidence and prediction intervals, and various tools to assess model fit: calculating the MSE, making train-test splits, and writing a function for cross validation. Solutions to this lab will be posted on Monday May 17th on the course website. 
+
+We will use the `Boston` dataset, which is in the `MASS` package that comes with `R`.
+
+```{r packages, warning = FALSE, message = FALSE}
+library(ISLR)
+library(MASS)
+library(tidyverse)
+library(ggplot2)
+```
+
+---
+
+1. __Inspect the Boston dataset using the `View()` function__
+
+---
+
+```{r view}
+View(Boston)
+```
+
+The `Boston` dataset contains the housing values and other information about Boston suburbs. We will use the dataset to predict housing value (the variable `medv`, here the outcome/dependent variable) by socio-economic status (the variable `lstat`, here the predictor / independent variable). 
+
+Let's explore socio-economic status and housing value in the dataset using visualization. 
+
+---
+
+2. __Create a scatter plot from the `Boston` dataset with `lstat` mapped to the x position and `medv` mapped to the y position. Store the plot in an object called `p_scatter`.__
+
+---
+
+```{r sctr}
+P_scatter <- ggplot(Boston, mapping = aes(x = lstat, y = medv)) +
+  geom_point() +
+  theme_minimal()
+P_scatter
+```
+
+---
+
+# Plotting linear regression with confidence intervals
+
+We'll start with making and visualizing the linear model. As you know, a linear model is fitted in `R` using the function `lm()`, which then returns a `lm` object. We are going to walk through the construction of a plot with a fit line and prediction / confidence intervals from an `lm` object.
+
+First, we will create the linear model. This model will be used to predict outcomes for the current data set, and - further along in this lab - to create new data. 
+
+---
+
+3. __Create a linear model object called `lm_ses` using the formula `medv ~ lstat` and the `Boston` dataset.__
+
+---
+
+
+```{r lm}
+lm_ses <- lm(medv ~ lstat, data = Boston)
+```
+
+You have now trained a regression model with `medv` (housing value) as the outcome/dependent variable and `lstat` (socio-economic status) as the predictor / independent variable.
+
+Remember that a regression estimates $\beta_0$ (the intercept) and $\beta_1$ (the slope) in the following equation:
+
+$$\boldsymbol{y} = \beta_0 + \beta_1\cdot \boldsymbol{x}_1 + \boldsymbol{\epsilon}$$
+
+---
+
+4. __Use the function `coef()` to extract the intercept and slope from the `lm_ses` object. Interpret the slope coefficient.__
+
+---
+
+```{r coef}
+coef(lm_ses)
+```
+This means that the fitted regression line goes trough the y-axis at height 34.553. You could say that when the socio-economic status is 0, the housing value is still 34.5538409 but that is generally not how the model is interpreted.
+
+---
+
+5. __Use `summary()` to get a summary of the `lm_ses` object. What do you see? You can use the help file `?summary.lm`.__
+
+---
+
+
+```{r sum}
+summary(lm_ses)
+```
+
+
+We now have a model object `lm_ses` that represents the formula
+
+$$\text{medv}_i = 34.55 - 0.95 * \text{lstat}_i + \epsilon_i$$
+
+With this object, we can predict a new `medv` value by inputting its `lstat` value. The `predict()` method enables us to do this for the `lstat` values in the original dataset.
+
+---
+
+6. __Save the predicted y values to a variable called `y_pred`__
+
+---
+
+```{r pred}
+newdata <- data.frame(Boston$lstat)
+colnames(newdata) <- 'lstat'
+y_pred <- predict(lm_ses,newdata)
+```
+
+
+---
+
+7. __Create a scatter plot with `y_pred` mapped to the x position and the true y value (`Boston$medv`) mapped to the y value. What do you see? What would this plot look like if the fit were perfect?__
+
+---
+
+If the fit were perfect, this would be a stragiht line y = x. 
+
+```{r predobs}
+
+ggplot(mapping = aes(x = y_pred, y = Boston$medv)) +
+  geom_point() +
+  theme_minimal()
+```
+
+We can also generate predictions from new data using the `newdat` argument in the `predict()` method. For that, we need to prepare a data frame with new values for the original predictors. 
+
+One method of number generation, is through using the function `seq()`, this function from `base R` generates a sequence of number using a standardized method. Typically length of the requested sequence divided by the range between `from` to `to`. For more information call `?seq`.
+
+---
+
+8. __Use the `seq()` function to generate a sequence of 1000 equally spaced values from 0 to 40. Store this vector in a data frame with (`data.frame()` or `tibble()`) as its column name `lstat`. Name the data frame `pred_dat`.__
+
+---
+
+```{r pred_dat}
+pred_dat <- data.frame('lstat' = seq(0, 40, length.out = 1000))
+```
+
+---
+
+9. a) __Use the newly created data frame, from Question 8, as the `newdata` argument to a `predict()` call for `lm_ses`. Store it in a variable named `y_pred_new`.__
+
+---
+
+```{r pred_ses}
+y_pred_new <- predict(lm_ses, newdata = pred_dat)
+```
+
+
+Now, we'll continue with the plotting part by adding a prediction line to the plot we previously constructed. 
+
+
+---
+
+9. b) __Add the vector `y_pred_new` to the `pred_dat` data frame with the name `medv`.__
+
+---
+
+```{r col}
+pred_dat$medv <- y_pred_new
+```
+
+---
+
+10. __Add a geom_line() to `p_scatter` from Question 2, with `pred_dat` as the `data` argument. What does this line represent?__
+
+---
+
+The line plotted represents the fitted hypothesis from the linear regression.
+
+```{r line}
+P_scatter <- P_scatter + geom_line(data = pred_dat)
+P_scatter
+```
+
+---
+
+11. __The `interval` argument can be used to generate confidence or prediction intervals. Create a new object called `y_pred_95` using `predict()` (again with the `pred_dat` data) with the `interval` argument set to "confidence". What is in this object?__
+
+---
+
+For each of the y_outputs we now also get a confidence interval, with the range of numbers between which the regression model is 95% sure the actual value will lie.
+
+```{r confint}
+y_pred_95 <- predict(lm_ses, newdata = pred_dat, interval = 'confidence')
+```
+
+---
+
+12. __Using the data from Question 11, and the sequence created in Question 8; create a data frame with 4 columns: `medv`, `lstat`, `lower`, and `upper`.__
+
+---
+
+```{r predframe}
+y_pred_95_df <- data.frame(y_pred_95)
+pred_dat$upper <- y_pred_95_df$upr
+pred_dat$lower <- y_pred_95_df$lwr
+```
+
+
+---
+
+13. __Add a `geom_ribbon()` to the plot with the data frame you just made. The ribbon geom requires three aesthetics: `x` (`lstat`, already mapped), `ymin` (`lower`), and `ymax` (`upper`). Add the ribbon below the `geom_line()` and the `geom_points()` of before to make sure those remain visible. Give it a nice colour and clean up the plot, too!__ 
+
+---
+
+```{r plot}
+P_scatter_with_ribbon <- P_scatter + geom_ribbon(data = pred_dat, mapping = aes( x = lstat, ymin = lower, ymax = upper), alpha = 0.5, fill = 'green')
+P_scatter_with_ribbon
+```
+
+---
+
+14. __Explain in your own words what the ribbon represents.__
+
+---
+
+```{r ribans}
+# The ribbon shows the 95% confidence interval for the fitted model_variables
+```
+
+
+---
+
+15. __Do the same thing, but now with the prediction interval instead of the confidence interval.__
+
+---
+
+
+```{r predint}
+y_pred_interval <- data.frame(predict(lm_ses, newdata = pred_dat, interval = 'prediction'))
+pred_dat$lowerpred <- y_pred_interval$lwr
+pred_dat$upperpred <- y_pred_interval$upr
+
+P_scatter_prediction <- P_scatter + geom_ribbon(data = pred_dat, mapping = aes(ymin = lowerpred, ymax = upperpred), alpha = .5, fill = 'blue')
+P_scatter_prediction
+```
+
+---
+
+# Model fit using the mean square error
+
+Next, we will write a function to assess the model fit using the mean square error: the square of how much our predictions on average differ from the observed values. 
+
+---
+
+16. __Write a function called `mse()` that takes in two vectors: true y values and predicted y values, and which outputs the mean square error.__ 
+
+---
+
+Start like so:
+
+```{r mse}
+mse <- function(y_true, y_pred) {
+  print(y_true)
+  i <- 0
+  totalsum <- 0
+  for (y in y_true){
+    totalsum <- totalsum + (y - y_pred[i])**2
+    i <- i + 1
+  }
+  print(i)
+
+  totalsum / (i+1)
+}
+
+```
+
+[Wikipedia](<https://en.wikipedia.org/w/index.php?title=Mean_squared_error&oldid=857685443>) may help for the formula.
+
+```{r mse2}
+tryout <- mse(y_true = Boston$mdev, y_pred = pred_dat$medv)
+```
+
+---
+
+17. __Make sure your `mse()` function works correctly by running the following code.__
+
+---
+
+```{r msetest}
+# mse(1:10, 10:1)
+```
+
+In the code, we state that our observed values correspond to $1, 2, ..., 9, 10$, while our predicted values correspond to $10, 9, ..., 2, 1$. This is graphed below, where the blue dots correspond to the observed values, and the yellow dots correspond to the predicted values. Using your function, you have now calculated the mean squared length of the dashed lines depicted in the graph below. If your function works correctly, the value returned should equal 33. 
+
+```{r mseplot, echo = FALSE, eval =FALSE}
+ggplot(data.frame(a = 1:10, b = 10:1, c = as.factor(letters[1:10])),
+       aes(y = c)) +
+  geom_segment(aes(x = a, xend = b, y = c, yend = c), lty = 2) +
+  geom_point(aes(x = a), colour = "blue") +
+  geom_point(aes(x = b), colour = "orange") + 
+  coord_flip() +
+  theme_minimal() +
+  labs(x = "", y = "") +
+  scale_x_continuous(breaks = 1:10) +
+  theme(axis.text.x = element_blank())
+```
+
+---
+
+18. __Calculate the mean square error of the `lm_ses` model. Use the `medv` column as `y_true` and use the `predict()` method to generate `y_pred`.__
+
+---
+
+```{r mse_ses}
+
+```
+
+You have calculated the mean squared length of the dashed lines in the plot below. As the MSE is computed using the data that was used to fit the model, we actually obtained the training MSE. Below we continue with splitting our data in a training, test and validation set such that we can calculate the out-of sample prediction error during model building using the validation set, and estimate the true out-of-sample MSE using the test set.  
+
+```{r mseplot2, echo = FALSE, eval =FALSE}
+Boston %>% 
+  ggplot(aes(x = lstat, y = medv)) + 
+  geom_segment(aes(xend = lstat, yend = predict(lm_ses)), lty = 2) +
+  geom_point(colour = "#883321") + 
+  geom_line(data = pred_dat, colour = "#00008b", size = 1) +
+  theme_minimal() + 
+  theme(legend.position = "bottom") +
+  labs(x    = "Proportion of low SES households",
+       y    = "Median house value",
+       size = "Crime rate",
+       title = "Boston house prices: errors")
+```
+
+Note that you can also easily obtain how much the predictions on average differ from the observed values in the original scale of the outcome variable. To obtain this, you take the root of the mean square error. This is called the Root Mean Square Error, abbreviated as RMSE. 
+
+---
+
+# Obtaining train-validation-test splits
+
+Now we will use the `sample()` function to randomly select observations from the `Boston` dataset to go into a training, test, and validation set. The training set will be used to fit our model, the validation set will be used to calculate the out-of sample prediction error during model building, and the test set will be used to estimate the true out-of-sample MSE.
+
+---
+
+19. __The `Boston` dataset has `r nrow(Boston)` observations. Use `c()` and `rep()` to create a vector with 253 times the word "train", 152 times the word "validation", and 101 times the word "test". Call this vector `splits`.__
+
+---
+
+
+```{r set_splitting}
+
+```
+
+
+---
+
+20. __Use the function `sample()` to randomly order this vector and add it to the `Boston` dataset using `mutate()`. Assign the newly created dataset to a variable called `boston_master`.__
+
+---
+
+```{r set_splitting_2}
+
+```
+
+---
+
+21. __Now use `filter()` to create a training, validation, and test set from the `boston_master` data. Call these datasets `boston_train`, `boston_valid`, and `boston_test`.__
+
+---
+
+```{r set_splitting_3}
+
+```
+
+We will set aside the `boston_test` dataset for now.
+
+---
+
+22. __Train a linear regression model called `model_1` using the training dataset. Use the formula `medv ~ lstat` like in the first `lm()` exercise. Use `summary()` to check that this object is as you expect.__
+
+---
+
+```{r lm1}
+
+```
+
+---
+
+23. __Calculate the MSE with this object. Save this value as `model_1_mse_train`.__
+
+---
+
+
+```{r lm1_mse_train}
+
+```
+
+
+---
+
+24. __Now calculate the MSE on the validation set and assign it to variable `model_1_mse_valid`. Hint: use the `newdata` argument in `predict()`.__
+
+---
+
+```{r lm1_mse_valid}
+
+```
+
+
+This is the estimated out-of-sample mean squared error.
+
+---
+
+25. __Create a second model `model_2` for the train data which includes `age` and `tax` as predictors. Calculate the train and validation MSE.__
+
+---
+
+```{r lm2}
+
+```
+
+---
+
+26. __Compare model 1 and model 2 in terms of their training and validation MSE. Which would you choose and why?__
+
+---
+
+```{r ans}
+
+``` 
+
+In choosing the best model, you should base your answer on the validation MSE. Using the out of sample mean square error, we have made a model decision (which parameters to include, only `lstat`, or using `age` and `tax` in addition to `lstat` to predict housing value). Now we have selected a final model.  
+
+---
+
+27. __For your final model, retrain the model one more time using both the training _and_ the validation set. Then, calculate the test MSE based on the (retrained) final model. What does this number tell you?__
+
+---
+
+```{r testmse}
+
+```
+
+As you will see during the remainder of the course, usually we set apart the test set at the beginning and on the remaining data perform the train-validation split multiple times. Performing the train-validation split multiple times is what we for example do in cross validation (see below). The validation sets are used for making model decisions, such as selecting predictors or tuning model parameters, so building the model. As the validation set is used to base model decisions on, we can not use this set to obtain a true out-of-sample MSE. That's where the test set comes in, it can be used to obtain the MSE of the final model that we choose when all model decisions have been made. As all model decisions have been made, we can use all data except for the test set to retrain our model one last time using as much data as possible to estimate the parameters for the final model.  
+
+---
+
+# Cross-validation (advanced)
+
+This is an advanced exercise. Some components we have seen before in this lab, but some things will be completely new. Try to complete it by yourself, but don't worry if you get stuck. If you don't know about `for loops` in `R`, read up on those before you start the exercise, for example by reading the [Basics: For Loops](<https://adav-course-2021.netlify.app/3_mse_cv/basics>) tab on the course website. 
+
+
+Use help in this order:
+
+- R help files
+- Internet search & stack exchange
+- Your peers
+- The answer, which shows one solution
+
+You may also just read the answer when they have been made available and try to understand what happens in each step.
+
+---
+
+28. __Create a function that performs k-fold cross-validation for linear models.__
+
+---
+
+Inputs: 
+
+- `formula`: a formula just as in the `lm()` function
+- `dataset`: a data frame
+- `k`: the number of folds for cross validation
+- any other arguments you need necessary
+
+Outputs:
+
+- Mean square error averaged over folds
+
+
+```{r crossval}
+
+```
+
+
+---
+
+29. __Use your function to perform 9-fold cross validation with a linear model with as its formula `medv ~ lstat + age + tax`. Compare it to a model with as formula `medv ~ lstat + I(lstat^2) + age + tax`.__
+
+---
+
+```{r mse_cross}
+
+```
+
