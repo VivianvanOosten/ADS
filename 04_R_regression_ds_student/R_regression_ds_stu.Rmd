@@ -1,0 +1,371 @@
+---
+title: "Linear regression for data science"
+params:
+  answers: true
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    theme: paper
+    pandoc_args: --output=R_regression_ds_answers.html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+
+# Introduction
+
+In this practical, you will learn how to handle many variables with regression by using variable selection techniques, shrinkage techniques, and how to tune hyper-parameters for these techniques. This practical has been derived from chapter 6 of ISLR. In addition, you will need [for loops](<https://r4ds.had.co.nz/iteration.html>) (see also the [Basics: For Loops](<https://adav-course-2021.netlify.app/3_mse_cv/basics>) tab on the course website under week 3) and data manipulation techniques from [Dplyr](<https://dplyr.tidyverse.org/>). 
+
+One of the packages we are going to use is `glmnet`. For this, you will probably need to `install.packages("glmnet")` before running the `library()` functions.
+
+```{r packages, warning = FALSE, message = FALSE}
+library(ISLR)
+library(glmnet)
+library(tidyverse)
+```
+
+---
+
+```{r seed, include = FALSE}
+set.seed(45)
+```
+
+--- 
+
+# Best subset selection
+
+Our goal for today is to to predict `Salary` from the `Hitters` dataset from the `ISLR` package. First, we will prepare a dataframe `baseball` from the `Hitters` dataset where you remove the baseball players for which the `Salary` is missing. Use the following code: 
+
+```{r naomit}
+baseball <- Hitters %>% filter(!is.na(Salary))
+```
+
+We can check how many baseball players are left using: 
+
+```{r nleft}
+nrow(baseball)
+
+```
+
+---
+
+1. a) __Create `baseball_train` (50%), `baseball_valid` (30%), and `baseball_test` (20%) datasets.__
+
+_Hint_: In addition to once again using the `dplyr` function `filter()` to specify which players you want in the new data frame, consider how you can split the amount of players into three groups of these specified sizes.
+
+---
+
+
+```{r split}
+train_sample <- sort(sample(nrow(baseball), nrow(baseball)*0.5))
+baseball_train <- baseball[train_sample, ]
+
+testvalid <- baseball[-train_sample,]
+test_sample <- sort(sample(nrow(testvalid), nrow(testvalid)*0.4))
+baseball_test <- baseball[test_sample, ]
+baseball_valid <- baseball[-test_sample, ]
+```
+
+---
+
+1. b) __Using your knowledge of `ggplot` from lab 2, plot the salary information of the train, validate and test groups using `geom_histogram()` or `geom_density()`__
+
+```{r hist}
+ggplot() +
+    geom_density(data = baseball_test, mapping = aes(x = Salary), color = 'blue', lbael = 'test') +
+    geom_density(data = baseball_train, mapping = aes(x = Salary), color ='green', label = 'train') +
+    geom_density(data = baseball_valid, mapping = aes(x = Salary), color ='red', label = 'valid')
+```
+
+
+---
+
+We will use the following function which we called `lm_mse()` to obtain the mse on the validation dataset for predictions from a linear model: 
+
+```{r lmmse2}
+lm_mse <- function(formula, train_data, valid_data) {
+  y_name <- as.character(formula)[2]
+  y_true <- valid_data[[y_name]]
+  
+  lm_fit <- lm(formula, train_data)
+  y_pred <- predict(lm_fit, newdata = valid_data)
+  
+  mean((y_true - y_pred)^2)
+}
+
+```
+
+Note that the input consists of (1) a formula, (2) a training dataset, and (3) a test dataset.
+
+---
+
+2. __Try out the function with the formula `Salary ~ Hits + Runs`, using `baseball_train` and `baseball_valid`.__
+
+---
+
+```{r lmmse3}
+lm <- lm_mse(Salary ~ Hits + Runs, baseball_train)
+```
+
+We have pre-programmed a function for you to generate a character vector for _all_ formulas with a set number of `p` variables. You can load the function into your environment by _sourcing_ the `.R` file it is written in:
+
+```{r src}
+source("generate_formulas.R")
+```
+
+You can use it like so:
+
+```{r use}
+generate_formulas(p = 2, x_vars = c("x1", "x2", "x3", "x4"), y_var = "y")
+```
+
+---
+
+3. __Create a character vector of all predictor variables from the `Hitters` dataset. `colnames()` may be of help. Note that `Salary` is not a predictor variable.__
+
+---
+
+```{r enum}
+predictors <- colnames(baseball)
+predictors <- predictors[predictors != 'Salary']
+```
+
+
+---
+
+4. __Using the function `generate_formulas()`, generate all formulas with as outcome `Salary` and 3 predictors from the `Hitters` data. Assign this to a variable called `formulas`. There should be `r choose(19, 3)` elements in this vector.__
+
+---
+
+
+```{r frmls}
+formulas <- generate_formulas(p = 3, x_vars = predictors, y_var = 'Salary')
+```
+
+---
+
+5. __Use a `for loop` to find the best set of 3 predictors in the `Hitters` dataset based on MSE. Use the `baseball_train` and `baseball_valid` datasets.__
+
+---
+
+When creating the `for loop`, use the function `as.formula()` from the stats package to loop over all the equations contained in `formulas`. `as.formula()` transforms the characters of the input to a formula, so we can actually use it as a formula in our code. 
+
+To select the best formula with the best MSE, use the function `which.min()`, which presents the lowest value from the list provided.
+
+---
+
+```{r forloop}
+all_mse <- list()
+forms_3 <- list()
+for (form in formulas) {
+  forms_3 <- append(forms_3, form)
+  form <- as.formula(form)
+  mse <- lm_mse(form, baseball_train, baseball_valid)
+  all_mse <- append(all_mse, mse)
+}
+lowest <- which.min(all_mse)
+```
+
+---
+
+6. __Do the same for 1, 2 and 4 predictors. Now select the best model from the models with the best set of 1, 2, 3, or 4 predictors in terms of its out-of-sample MSE__
+
+---
+
+```{r forloops}
+all_smallest <- list()
+for ( number in c(1,2,3,4) ) {
+  formulas <- generate_formulas(p = number, x_vars = predictors, y_var = 'Salary')
+  mse_list <- list()
+  formsall <- list()
+  for (form in formulas) {
+  formsall <- append(formsall, form)
+  form <- as.formula(form)
+  mse <- lm_mse(form, baseball_train, baseball_valid)
+  mse_list <- append(mse_list, mse)
+  }
+  smallest <- which.min(mse_list)
+  print(mse_list[c(9,11,56,48)])
+  print(number)
+  all_smallest <- append(all_smallest, smallest)
+}
+
+
+```
+
+---
+
+7. a) __Calculate the test MSE for the model with the best number of predictors.__
+
+---
+
+```{r msefinal}
+mse_list[48]
+my_formula <- formsall[48]
+print(as.formula(as.character(my_formula)))
+testmodel <- lm(as.formula(as.character(my_formula)), baseball_train)
+pred_val <- predict(testmodel, newdata = baseball_test)
+true_val <- baseball_test$Salary
+
+ggplot(baseball_test, mapping = aes(x = pred_val, y = true_val)) +
+  geom_point()
+```
+
+---
+
+7. b) __Using the model with the best number of predictors, create a plot comparing predicted values (mapped to x position) versus observed values (mapped to y position) of `baseball_test`.__
+
+---
+
+```{r msefinal_plot}
+
+```
+
+Through enumerating all possibilities, we have selected the best subset of at most 4 non-interacting predictors for the prediction of baseball salaries. This method works well for few predictors, but the computational cost of enumeration increases quickly to the point where it is not feasible to enumerate all combinations of variables:
+
+```{r increase, echo = FALSE, fig.width=5, fig.height=3, fig.align="center"}
+P <- 1:30
+data.frame(npred = P, 
+           nmod  = rowSums(outer(P, P, choose))) %>% 
+  ggplot(aes(x = npred, y = nmod)) +
+  geom_line(col = "dark blue", size = 1) +
+  theme_minimal() +
+  labs(x = "Number of predictors", y = "Number of linear sub-models")
+```
+
+---
+
+# Regularization with glmnet
+
+`glmnet` is a package that implements efficient (quick!) algorithms for LASSO and ridge regression, among other things.
+
+---
+
+8. __Skim through the help file of `glmnet`. We are going to perform a linear regression with normal (gaussian) error terms. What format should our data be in?__
+
+---
+
+
+```{r datain}
+
+```
+
+Again, we will try to predict baseball salary, this time using all the available variables and using the LASSO penalty to perform subset selection. For this, we first need to generate an input matrix.
+
+---
+
+9. __First generate the input matrix using (a variation on) the following code. Remember that the "." in a formula means "all available variables". Make sure to check that this `x_train` looks like what you would expect.__
+
+---
+
+```{r modelmat1, eval = FALSE, include = !params$answers}
+x_train <- model.matrix(Salary ~ ., data = baseball_train %>% select(-split))
+```
+
+```{r modelmat}
+
+```
+
+The `model.matrix()` function takes a dataset and a formula and outputs the predictor matrix where the categorical variables have been correctly transformed into dummy variables, and it adds an intercept. It is used internally by the `lm()` function as well!
+
+
+---
+
+10. __Using `glmnet()`, perform a LASSO regression with the generated `x_train` as the predictor matrix and `Salary` as the response variable. Set the `lambda` parameter of the penalty to 15. NB: Remove the intercept column from the `x_matrix` -- `glmnet` adds an intercept internally.__
+
+---
+
+```{r lasso}
+
+```
+
+---
+
+11. __The coefficients for the variables are in the `beta` element of the list generated by the `glmnet()` function. Which variables have been selected? You may use the `coef()` function.__
+
+---
+
+```{r sel}
+
+```
+
+
+---
+
+12. __Create a predicted versus observed plot for the model you generated with the `baseball_valid` data. Use the `predict()` function for this! What is the MSE on the validation set?__
+
+---
+
+```{r predobs}
+
+```
+
+---
+
+# Tuning lambda
+
+Like many methods of analysis, regularized regression has a _tuning parameter_. In the previous section, we've set this parameter to 15. The `lambda` parameter changes the strength of the shrinkage in `glmnet()`. Changing the tuning parameter will change the predictions, and thus the MSE. In this section, we will select the tuning parameter based on out-of-sample MSE.
+
+
+---
+
+13. __Fit a LASSO regression model on the same data as before, but now do not enter a specific `lambda` value. What is different about the object that is generated? Hint: use the `coef()` and `plot()` methods on the resulting object.__
+
+---
+
+```{r lambdas}
+
+```
+
+For deciding which value of lambda to choose, we could work similarly to what we have don in the best subset selection section before. However, the `glmnet` package includes another method for this task: cross validation.
+
+---
+
+14. __Use the `cv.glmnet` function to determine the `lambda` value for which the out-of-sample MSE is lowest using 15-fold cross validation. As your dataset, you may use the training and validation sets bound together with bind_rows(). What is the best lambda value?__
+
+**Remember** to remove column 21 in your dataset (the mutated column from Question 1. a) using `[ , -21]`, which designated which observations should be split into which groups), as this is not a variable within the Hitters Dataset (which you have called *Baseball*). And to call the specific data `lambda.min` from the result of using `cv.glmnet`.
+
+---
+
+```{r cv}
+
+```
+
+---
+
+15. __Try out the plot() method on this object. What do you see? What does this tell you about the bias-variance tradeoff?__
+
+---
+
+
+```{r cvplot}
+
+```
+
+
+It should be noted, that for all these previous exercises they can also be completed using the **Ridge Method** which is not covered in much depth during this practical session. To learn more about this method please refer back Section 6.2 in the An Introduction to Statistical Learning Textbook. 
+
+---
+
+# Comparing methods (advanced) 
+
+This last exercise is optional. You can also opt to view the answer when made available and try to understand what is happening in the code. 
+
+---
+
+16. __Create a bar plot comparing the test set (baseball_test) MSE of (a) linear regression with all variables, (b) the best subset selection regression model we created, (c) LASSO with lambda set to 50, and (d) LASSO with cross-validated lambda. As training dataset, use the rows in both the `baseball_train` and `baseball_valid`__
+
+---
+
+```{r barplot}
+
+```
