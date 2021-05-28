@@ -1,0 +1,408 @@
+---
+title: "Supervised learning: Classification"
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    df_print: paged
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+
+# Introduction
+
+During this practical, two different classification methods will be covered: K-nearest neighbours and logistic regression. 
+
+One of the packages we are going to use is [class](<https://cran.r-project.org/web/packages/class/class.pdf>). For this, you will probably need to `install.packages("class")` before running the `library()` functions.
+
+```{r packages, warning = FALSE, message = FALSE}
+library(MASS)
+library(class)
+library(ISLR)
+library(tidyverse)
+```
+
+
+```{r seed, include = FALSE}
+set.seed(45)
+```
+
+
+This practical will be mainly based around the `default` dataset which contains credit card loan data for 10 000 people. With the goal being to classify credit card cases as `yes` or `no` based on whether they will default on their loan.
+
+---
+
+1. __Create a scatterplot of the `Default` dataset, where `balance` is mapped to the x position, `income` is mapped to the y position, and `default` is mapped to the colour. Can you see any interesting patterns already?__ 
+
+---
+
+```{r defaultplot1}
+
+scatter1 <- ggplot(data = Default, mapping = aes(x = balance, y = income, color = default)) +
+  geom_point()
+scatter1
+```
+
+---
+
+2. __Add `facet_grid(cols = vars(student))` to the plot. What do you see?__
+
+---
+
+
+```{r defaultplot2}
+scatter1 + facet_grid(cols = vars(student))
+```
+
+---
+
+3. __Transform "student" into a dummy variable using `ifelse()` (0 = not a student, 1 = student). Then, randomly split the Default dataset into a training set `default_train` (80%) and a validation set `default_valid` (20%)__
+
+If you haven't used the function `ifelse()` before, please feel free to review it in [Chapter 5 Control Flow](<https://adv-r.hadley.nz/control-flow.html>) (*particular section 5.2.2*) in Hadley Wickham's Book [Advanced R](<https://adv-r.hadley.nz/>), this provides a concise overview of choice functions (`if()`) and vectorised if (`ifelse()`). 
+
+---
+
+```{r split}
+default2 <- mutate(Default, student = ifelse(student == 'No', 0, 1))
+train_nr <- nrow(default2)*0.8
+valid_nr <- nrow(default2)*0.2
+
+split <- c(rep("Train", train_nr), rep("Valid", valid_nr))
+default2 <- default2  %>% mutate(split = sample(split))
+
+# we create dataframes for each of the splits
+default_train <- default2 %>% filter(split == "Train") %>% select(-split)
+default_valid <- default2 %>% filter(split == "Valid") %>% select(-split)
+
+```
+
+
+---
+
+# K-Nearest Neighbours
+
+Now that we have explored the dataset, we can start on the task of classification. We can imagine a credit card company wanting to predict whether a customer will default on the loan so they can take steps to prevent this from happening.
+
+The first method we will be using is k-nearest neighbours (KNN). It classifies datapoints based on a majority vote of the k points closest to it. In `R`, the `class` package contains a `knn()` function to perform knn.
+
+---
+
+4. __Create class predictions for the test set using the `knn()` function. Use `student`, `balance`, and `income` (but no basis functions of those variables) in the `default_train` dataset. Set k to 5. Store the predictions in a variable called `knn_5_pred`.__
+
+*Remember*: make sure to review the `knn()` function through the *help* panel on the GUI or through typing "?knn" into the console. For further guidance on the `knn()` function, please see *Section 4.6.5* in [An introduction to Statistical Learning](<http://faculty.marshall.usc.edu/gareth-james/ISL/>)
+
+---
+
+
+```{r knn5}
+
+knn_5_pred <- knn(default_train[c('student','balance','income')], default_valid[c('student','balance','income')], cl = default_train[['default']], k = 5 )
+
+```
+
+---
+
+5. __Create two scatter plots with income and balance as in the first plot you made. One with the true class (`default`) mapped to the colour aesthetic, and one with the predicted class (`knn_5_pred`) mapped to the colour aesthetic. Hint: Add the predicted class `knn_5_pred` to the `default_valid` dataset before starting your `ggplot()` call of the second plot. What do you see?__
+
+---
+
+```{r plotknn, results = "hold"}
+
+default_valid$pred <- knn_5_pred
+
+scatter2 <- ggplot(data = default_valid, mapping = aes(x = balance, y = income, color = pred)) +
+  geom_point()
+
+scatter1
+scatter2
+
+```
+
+
+---
+
+6. __Repeat the same steps, but now with a `knn_2_pred` vector generated from a 2-nearest neighbours algorithm. Are there any differences?__
+
+---
+
+```{r knn2}
+
+knn_2_pred <- knn(default_train[c('student','balance','income')], default_valid[c('student','balance','income')], cl = default_train[['default']], k = 2 )
+default_valid$pred2 <- knn_2_pred
+
+scatter2 <- ggplot(data = default_valid, mapping = aes(x = balance, y = income, color = pred2)) +
+  geom_point() +
+  theme_minimal()
+
+scatter1
+scatter2 + theme_minimal()
+```
+
+During this we have manually tested two different values for K, this although useful in exploring your data. To know the optimal value for K, you should use cross validation.
+
+
+---
+
+# Assessing classification
+
+The confusion matrix is an insightful summary of the plots we have made and the correct and incorrect classifications therein. A confusion matrix can be made in `R` with the `table()` function by entering two `factor`s:
+
+```{r confmat1}
+
+table2 <- table(true = default_valid$default, predicted = knn_2_pred)
+table2
+```
+
+To learn more these, please see *Section 4.4.3* in An Introduction to Statistical Learning, where it discusses Confusion Matrices in the context of another classification method Linear Discriminant Analysis (LDA). 
+
+---
+
+7. __What would this confusion matrix look like if the classification were perfect?__
+
+---
+
+```{r confmatb}
+# Only values on the diagonal
+```
+
+---
+
+8. __Make a confusion matrix for the 5-nn model and compare it to that of the 2-nn model. What do you conclude?__
+
+---
+
+```{r confmat3}
+table5 <- table(true = default_valid$default, predicted = knn_5_pred)
+# This one has more on the if actually yes then predicted no and less on the if actually no then predicted yes
+# Depending on the application this might be the desired result or not
+table5
+```
+
+---
+
+9. __Comparing performance becomes easier when obtaining more specific measures. Calculate the specificity, sensitivity, accuracy and the precision.__
+
+---
+
+```{r sens, include = params$answers}
+
+specificity <- function(conf_matrix){
+  tn <- conf_matrix[1,1]
+  fp <- conf_matrix[2,1]
+  
+  tn / (tn + fp)
+}
+
+sensitivity <- function(conf_matrix){
+  tp <- conf_matrix[2,2]
+  fn <- conf_matrix[1,2]
+  
+  tp / (tp + fn)
+}
+
+accuracy <- function(conf_matrix){
+  tn <- conf_matrix[1,1]
+  fp <- conf_matrix[2,1]
+  tp <- conf_matrix[2,2]
+  fn <- conf_matrix[1,2]
+  
+  (tp + tn) / (tp + tn + fp + fn)
+}
+
+precision <- function(conf_matrix){
+  fp <- conf_matrix[2,1]
+  tp <- conf_matrix[2,2]
+  
+  tp / (tp + fp)
+}
+
+
+
+#all_metrics <- list(specificity, sensitivity, accuracy, precision)
+metric_names <- list('specificity', 'sensitivity', 'accuracy', 'precision')
+
+for (metric in metric_names) {
+  func <- get(metric)
+  print(metric)
+  print(func(table2))
+  print(func(table5))
+}
+
+```
+
+
+---
+
+# Logistic regression
+
+KNN directly predicts the class of a new observation using a majority vote of the existing observations closest to it. In contrast to this, logistic regression predicts the `log-odds` of belonging to category 1. These log-odds can then be transformed to probabilities by performing an inverse logit transform:
+
+$p = \frac{1}{1 + e^{-\alpha}}$
+
+where $\alpha$; indicates log-odds for being in class 1 and $p$ is the probability.
+
+Therefore, logistic regression is a `probabilistic` classifier as opposed to a `direct` classifier such as KNN: indirectly, it outputs a probability which can then be used in conjunction with a cutoff (usually 0.5) to classify new observations.
+
+Logistic regression in `R` happens with the `glm()` function, which stands for generalized linear model. Here we have to indicate that the residuals are modeled not as a Gaussian (normal distribution), but as a `binomial` distribution.
+
+--- 
+
+10. __Use `glm()` with argument `family = binomial` to fit a logistic regression model `lr_mod` to the `default_train` data.__
+
+---
+
+```{r lrmod}
+lr_model <- glm(default ~ . , data = default_train, family = 'binomial')
+
+```
+
+Now we have generated a model, we can use the `predict()` method to output the estimated probabilities for each point in the training dataset. By default `predict` outputs the log-odds, but we can transform it back using the inverse logit function of before or setting the argument `type = "response"` within the predict function. 
+
+---
+
+11. __Visualise the predicted probabilities versus observed class for the training dataset in `lr_mod`. You can choose for yourself which type of visualisation you would like to make. Write down your interpretations along with your plot.__
+
+---
+
+
+```{r visdif}
+predicted <- predict(lr_model, default_train, type = 'response')
+
+plot_train <- default_train
+plot_train$pred <- predicted
+
+ggplot(data = plot_train, mapping = aes(x = income, y = pred, color = default)) +
+  geom_point()
+
+ggplot(data = plot_train, mapping = aes(x = income, y = balance, color = default)) +
+  geom_point()
+
+```
+
+Another advantage of logistic regression is that we get coefficients we can interpret.
+
+---
+
+12. __Look at the coefficients of the `lr_mod` model and interpret the coefficient for `balance`. What would the probability of default be for a person who is not a student, has an income of 40000, and a balance of 3000 dollars at the end of each month? Is this what you expect based on the plots we've made before?__
+
+---
+
+```{r coefs}
+print(predict(lr_model, newdata = data.frame(student = 0, balance = 3000, income = 40000), type = 'response'))
+summary(lr_model)
+# Balance means that the odds of not defaulting areup
+# 0.998 for nonstudent with income 40000 and balance of 3000 dollars. 
+
+```
+
+
+Let's visualise the effect `balance` has on the predicted default probability.
+
+---
+
+13. __Create a data frame called `balance_df` with 3 columns and 500 rows: `student` always 0, `balance` ranging from 0 to 3000, and `income` always the mean income in the `default_train` dataset.__
+
+---
+
+```{r marbal}
+balance_df <- Default  %>% 
+  filter(student == 'No', 
+         balance < 3000, 
+         balance > 0) %>% 
+  mutate(student = 0,
+         income = mean(default_train$income))
+```
+
+---
+
+14. __Use this dataset as the `newdata` in a `predict()` call using `lr_mod` to output the predicted probabilities for different values of `balance`. Then create a plot with the `balance_df$balance` variable mapped to x and the predicted probabilities mapped to y. Is this in line with what you expect?__
+
+---
+
+```{r marplot}
+newpredicted <- predict(lr_model, newdata = balance_df, type = 'response')
+
+ggplot(mapping = aes(x = balance_df$balance, y = newpredicted)) +
+  geom_point()
+```
+
+---
+
+15. __Create a confusion matrix just as the one for the KNN models by using a cutoff predicted probability of 0.5. Does logistic regression perform better?__
+
+---
+
+```{r confmatlogreg}
+zeroone <- ifelse(newpredicted < 0.5, 'No', 'Yes')
+
+confusion_balance <- table(true = balance_df$default, pred = zeroone )
+confusion_balance
+```
+
+---
+
+16. __Calculate the specificity, sensitivity, accuracy and the precision for the logistic regression using the above confusion matrix. Again, compare the logistic regression to KNN.__
+
+---
+
+```{r logreg_sens, include = params$answers}
+for (metric in metric_names) {
+  func <- get(metric)
+  print(metric)
+  print(func(table2))
+  print(func(confusion_balance))
+}
+```
+
+
+---
+
+# Final exercise
+
+Now let's do another - slightly less guided - round of KNN and/or logistic regression on a new dataset in order to predict the outcome for a specific case. We will use the Titanic dataset also discussed in the lecture. The data can be found in the `/data` folder of your project. Before creating a model, explore the data, for example by using `summary()`. 
+
+---
+
+17. __Create a model (using knn or logistic regression) to predict whether a 14 year old boy from the 3rd class would have survived the Titanic disaster.__
+
+---
+```{r stuff}
+Titanic <- read_csv('data/Titanic.csv') %>% drop_na()
+titanic2 <- mutate(Titanic, Survived = ifelse(Survived == 'No', 0, 1)) %>%
+  select(-Name)
+train_nr <- nrow(titanic2)*0.7
+valid_nr <- nrow(titanic2)*0.3+1
+
+split <- c(rep("Train", train_nr), rep("Valid", valid_nr))
+titanic2 <- titanic2  %>% mutate(split = sample(split))
+
+# we create dataframes for each of the splits
+titanic_train <- titanic2 %>% filter(split == "Train") %>% select(-split)
+titanic_valid <- titanic2 %>% filter(split == "Valid") %>% select(-split)
+
+
+titanic_model <- glm(Survived ~ . , data = titanic_train, family = 'binomial')
+titanic_knn <- knn(titanic_train[c('Sex','PClass','Age')], titanic_valid[c('Sex','PClass','Age')], titanic_train$Survived, k = 5)
+
+predict(titanic_knn, newdata = data.frame(PClass = '3rd', Sex = 'male', Age = 14), type = 'response')
+```
+---
+
+18. __Would the passenger have survived if they were a 14 year old girl in 2nd class?__
+
+---
+
+
+
+```{r}
+predict(titanic_model, newdata = data.frame(PClass = '2nd', Sex = 'female', Age = 14), type = 'response')
+```
