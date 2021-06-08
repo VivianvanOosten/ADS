@@ -1,0 +1,265 @@
+---
+title: "Moving beyond linearity"
+mainfont: Arial
+fontsize: 12pt
+urlcolor: blue
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this practical, we will learn about nonlinear extensions to regression using basis functions and how to create, visualise, and interpret them. Parts of it are adapted from the practicals in ISLR chapter 7.
+
+One of the packages we are going to use is `splines`. For this, you will probably need to `install.packages("splines")` before running the `library()` functions, however depending on when you installed `R`, it may be a base function within your library.
+
+Additionally this practical will use lots of functions from the `tidyverse` package `dplyr`. Therefore, if you are struggling with there usage, please review the guidance in the [dplyr basics tab](<https://adav-course-2021.netlify.app/4_linregds/basic_dplyr/>). 
+
+```{r packages, warning = FALSE, message = FALSE}
+library(MASS)
+library(splines)
+library(ISLR)
+library(tidyverse)
+```
+
+
+```{r seed, include = FALSE}
+set.seed(45)
+```
+
+Median housing prices in Boston do not have a linear relation with the proportion of low SES households. Today we are going to focus exclusively on _prediction_.
+
+```{r houseprice}
+Boston %>% 
+  ggplot(aes(x = lstat, y = medv)) +
+  geom_point() +
+  theme_minimal()
+```
+
+First, we need a way of visualising the predictions. The below function `pred_plot()` does this for us: the function `pred_plot()` takes as input an `lm` object, which outputs the above plot but with a prediction line generated from the model object using the `predict()` method. 
+
+---
+
+1. __Identify what each line of code does within the function `predict()`. Next, using # annotate what each line does within the function.__
+
+_hint_: You can use the function `print()` to output and investigate what lines within the function are doing. 
+
+---
+
+```{r pred_plot}
+
+pred_plot <- function(model) {
+  x_pred <- seq(min(Boston$lstat), max(Boston$lstat), length.out = 500)
+  y_pred <- predict(model, newdata = tibble(lstat = x_pred))
+  
+  Boston %>%
+    ggplot(aes(x = lstat, y = medv)) +
+    geom_point() +
+    geom_line(data = tibble(lstat = x_pred, medv = y_pred), size = 1, col = "blue") +
+    theme_minimal()
+}
+
+```
+
+---
+
+2. __Create a linear regression object called `lin_mod` which models `medv` as a function of `lstat`. Check if your prediction plot works by running `pred_plot(lin_mod)`. Do you see anything out of the ordinary with the predictions?__
+
+---
+
+```{r lin_mod}
+lin_mod <- lm(medv ~ lstat, data = Boston)
+  
+pred_plot(lin_mod)
+```
+# see top left, you wil miss the croisant ?
+
+
+# Polynomial regression
+
+The first extension to linear regression is polynomial regression, with basis functions  $\beta_{j}(x_{i}^{j})$ (ISLR, p. 270). 
+
+---
+
+3. __Create another linear model `pn3_mod`, where you add the second and third-degree polynomial terms `I(lstat^2)` and `I(lstat^3)` to the formula. Create a `pred_plot()` with this model.__
+
+---
+
+```{r pn3_mod}
+pn3_mod <- lm(medv ~ I(lstat^2) + I(lstat^3), data = Boston)
+
+pred_plot(pn3_mod)
+```
+Stil missing the top left part of the prediction,
+
+
+The function `poly()` can automatically generate a matrix which contains columns with polynomial basis function outputs.
+
+---
+
+4. __Play around with the poly() function. What output does it generate with the arguments `degree = 3` and `raw = TRUE`?__
+
+---
+
+```{r poly}
+poly1 <- poly(Boston$medv, degree = 3, raw =  TRUE )
+
+summary(poly1)
+summary(Boston$medv)
+
+# Depending on the degrees, it generates that amout of rows.
+# you get more prediction 
+
+poly(1:5, degree = 3, raw = TRUE)
+
+
+```
+
+---
+
+5. __Use the poly() function directly in the model formula to create a 3rd-degree polynomial regression predicting `medv` using `lstat`. Compare the prediction plot to the previous prediction plot you made. What happens if you change the poly() function to `raw = FALSE`?__
+
+---
+
+```{r p3}
+pn3_mod2 <- lm(medv ~ poly(lstat, 3, raw = TRUE), data = Boston)
+pred_plot(pn3_mod2)
+
+summary(pn3_mod2)
+```
+
+# Piecewise constant (Step function)
+
+Another basis function we can use is a step function. For example, we can split the `lstat` variable into two groups based on its median and take the average of these groups to predict `medv`.
+
+---
+
+6. __Create a model called `pw2_mod` with one predictor: `I(lstat <= median(lstat))`. Create a pred_plot with this model. Use the coefficients in `coef(pw2_mod)` to find out what the predicted value for a low-lstat neighbourhood is. (28,3876)__
+
+---
+
+
+```{r pw2}
+pw2_mod <-lm(medv ~ (I(lstat <= median(lstat))), data = Boston)  
+
+summary(pw2_mod)
+coef(pw2_mod)
+pred_plot((pw2_mod))
+
+
+```
+
+---
+
+7. __Use the `cut()` function in the formula to generate a piecewise regression model called `pw5_mod` that contains 5 equally spaced sections. Again, plot the result using `pred_plot`.__
+
+---
+
+```{r pw5}
+pw5_mod <- lm(medv ~ cut(lstat, 5), data = Boston)
+pred_plot(pw5_mod)
+
+summary(pw5_mod)
+summary(Boston$lstat)
+```
+
+Note that the sections generated by `cut()` are equally spaced in terms of `lstat`, but they do not have equal amounts of data NO . In fact, the last section has only 9 data points to work with:
+
+```{r tablecut}
+table(cut(Boston$lstat, 5))
+```
+
+---
+
+8. __Optional: Create a piecewise regression model `pwq_mod` where the sections are not equally spaced, but have equal amounts of training data. Hint: use the `quantile()` function.__
+
+---
+
+```{r pwq_mod}
+pwq_mod <- lm(medv ~ cut(lstat, quantile(Boston$lstat)), data = Boston)
+
+summary(pwq_mod)
+```
+
+
+# Splines
+
+Using splines, we can combine polyniomials with step functions (as is done in piecewise polynomical regression, see ISLR and the lecture) AND take out the discontinuities. 
+
+
+The `bs()` function from the `splines` package does all the work for us.
+
+---
+
+9. __Create a cubic spline model `bs1_mod` with a knot at the median using the `bs()` function.__
+
+_hint_: If you are not sure how to use the function `bs()`, check out the first example at the bottom of the help file by using `?bs`. 
+
+---
+
+```{r bspline}
+bs1_mod <- lm(medv ~ bs(lstat, knots = median(lstat)), data = Boston)
+summary(bs1_mod)
+
+```
+
+---
+
+10. __Create a prediction plot from the `bs1_mod` object using the `plot_pred()` function.__
+
+---
+
+```{r bsplot}
+
+pred_plot(bs1_mod)
+```
+
+Note that this line fits very well, but at the right end of the plot, the curve slopes up. Theoretically, this is unexpected -- always pay attention to which predictions you are making and whether that behaviour is in line with your expectations.
+
+The last extension we will look at is the natural spline. This works in the same way as the cubic spline, with the additional constraint that the function is required to be linear at the boundaries. The `ns()` function from the `splines` package is for generating the basis representation for a natural spline. 
+
+---
+
+11. __Create a natural cubic spline model (`ns3_mod`) with 3 degrees of freedom using the `ns()` function. Plot it, and compare it to the `bs1_mod`.__
+
+---
+
+```{r ns}
+
+ns3_mod <- lm(medv ~ ns(lstat, df = 3), data = Boston)
+pred_plot(ns3_mod)
+pred_plot(bs1_mod)
+```
+
+
+---
+
+12. __Plot `lin_mod`, `pn3_mod`, `pw5_mod`, `bs1_mod`, and `ns3_mod` and give them nice titles by adding `+ ggtitle("My title")` to the plot. You may use the function `plot_grid()` from the package `cowplot` to put your plots in a grid.__
+
+---
+
+```{r predplots}
+library(cowplot)
+plot_grid(pred_plot(lin_mod), pred_plot(pn3_mod), pred_plot(pw5_mod), pred_plot(bs1_mod), pred_plot(ns3_mod))
+```
+
+
+# Programming exercise (optional)
+
+---
+
+13. __Use 12-fold cross validation to determine which of the 5 methods (`lin`, `pn3`, `pw5`, `bs1`, and `ns3`) has the lowest out-of-sample MSE.__
+
+---
+
+```{r cv}
+
+```
