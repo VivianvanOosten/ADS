@@ -1,0 +1,32 @@
+---
+title: "Preprocessing the data"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(tidyr)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+df <- read_csv('datasets assignment 2/Spotify-2000.csv') %>%
+  select(c('Danceability',
+            'Beats Per Minute (BPM)',
+            'Energy',
+            'Liveness',
+            'Valence',
+            'Speechiness',
+            'Acousticness' )) %>%
+  na.omit()
+```
+
+```{r}
+ggplot(data = df, mapping = aes(x = `Energy`, y = Danceability)) +
+  geom_point() +
+  geom_smooth()
+```
+
+Nice variables for popularity: danceability, loudness, liveness (ish), speechiness
+Nice varialbes for danceability: BPM, Energy, liveness, Valence, Speechiness, Acousticness
